@@ -1,9 +1,10 @@
 #![no_std]
 
+mod error;
 mod test;
 mod token;
 
-use num_integer::Roots;
+use crate::error::LendCraftError;
 use soroban_sdk::{
     contractimpl, contractmeta, Address, Bytes, BytesN, ConversionError, Env, RawVal, TryFromVal,
 };
@@ -12,9 +13,10 @@ use token::create_contract;
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
-    Deposit = 0,
+    TokenUSDC = 1,
     TokenShare = 2,
     TotalShares = 3,
+    ReserveUSDC = 4,
 }
 
 impl TryFromVal<Env, DataKey> for RawVal {
@@ -25,12 +27,8 @@ impl TryFromVal<Env, DataKey> for RawVal {
     }
 }
 
-fn get_token_a(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::TokenA).unwrap()
-}
-
-fn get_token_b(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::TokenB).unwrap()
+fn get_token_usdc(e: &Env) -> Address {
+    e.storage().get_unchecked(&DataKey::TokenUSDC).unwrap()
 }
 
 fn get_token_share(e: &Env) -> Address {
@@ -41,28 +39,24 @@ fn get_total_shares(e: &Env) -> i128 {
     e.storage().get_unchecked(&DataKey::TotalShares).unwrap()
 }
 
+fn get_reserve_usdc(e: &Env) -> i128 {
+    e.storage().get_unchecked(&DataKey::ReserveUSDC).unwrap()
+}
+
 fn get_balance(e: &Env, contract: Address) -> i128 {
     token::Client::new(e, &contract).balance(&e.current_contract_address())
 }
 
-fn get_balance_a(e: &Env) -> i128 {
-    get_balance(e, get_token_a(e))
-}
-
-fn get_balance_b(e: &Env) -> i128 {
-    get_balance(e, get_token_b(e))
+fn get_balance_usdc(e: &Env) -> i128 {
+    get_balance(e, get_token_usdc(e))
 }
 
 fn get_balance_shares(e: &Env) -> i128 {
     get_balance(e, get_token_share(e))
 }
 
-fn put_token_a(e: &Env, contract: Address) {
-    e.storage().set(&DataKey::TokenA, &contract);
-}
-
-fn put_token_b(e: &Env, contract: Address) {
-    e.storage().set(&DataKey::TokenB, &contract);
+fn put_token_usdc(e: &Env, contract: Address) {
+    e.storage().set(&DataKey::TokenUSDC, &contract);
 }
 
 fn put_token_share(e: &Env, contract: Address) {
@@ -73,12 +67,8 @@ fn put_total_shares(e: &Env, amount: i128) {
     e.storage().set(&DataKey::TotalShares, &amount)
 }
 
-fn put_reserve_a(e: &Env, amount: i128) {
-    e.storage().set(&DataKey::ReserveA, &amount)
-}
-
-fn put_reserve_b(e: &Env, amount: i128) {
-    e.storage().set(&DataKey::ReserveB, &amount)
+fn put_reserve_usdc(e: &Env, amount: i128) {
+    e.storage().set(&DataKey::ReserveUSDC, &amount)
 }
 
 fn burn_shares(e: &Env, amount: i128) {
@@ -102,153 +92,96 @@ fn transfer(e: &Env, token: Address, to: Address, amount: i128) {
     token::Client::new(e, &token).transfer(&e.current_contract_address(), &to, &amount);
 }
 
-fn transfer_a(e: &Env, to: Address, amount: i128) {
-    transfer(e, get_token_a(e), to, amount);
-}
-
-fn transfer_b(e: &Env, to: Address, amount: i128) {
-    transfer(e, get_token_b(e), to, amount);
-}
-
-fn get_deposit_amounts(
-    desired_a: i128,
-    min_a: i128,
-    desired_b: i128,
-    min_b: i128,
-    reserve_a: i128,
-    reserve_b: i128,
-) -> (i128, i128) {
-    if reserve_a == 0 && reserve_b == 0 {
-        return (desired_a, desired_b);
-    }
-
-    let amount_b = desired_a * reserve_b / reserve_a;
-    if amount_b <= desired_b {
-        if amount_b < min_b {
-            panic!("amount_b less than min")
-        }
-        (desired_a, amount_b)
-    } else {
-        let amount_a = desired_b * reserve_a / reserve_b;
-        if amount_a > desired_a || desired_a < min_a {
-            panic!("amount_a invalid")
-        }
-        (amount_a, desired_b)
-    }
+fn transfer_usdc(e: &Env, to: Address, amount: i128) {
+    transfer(e, get_token_usdc(e), to, amount);
 }
 
 // Metadata that is added on to the WASM custom section
-contractmeta!(
-    key = "Description",
-    val = "Constant product AMM with a .3% swap fee"
-);
+contractmeta!(key = "Description", val = "Money market product tokenizer");
 
 pub trait LendCraftTokenizerTrait {
-    // Sets the token contract addresses for this pool
-    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_a: Address, token_b: Address);
+    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address);
 
-    // Returns the token contract address for the pool share token
     fn share_id(e: Env) -> Address;
 
-    // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
-    // is determined based on the difference between the reserves stored by this contract, and
-    // the actual balance of token_a and token_b for this contract.
-    fn deposit(e: Env, to: Address, desired_a: i128, min_a: i128, desired_b: i128, min_b: i128);
+    fn deposit(e: Env, to: Address, usdc_amount: i128) -> Result<i128, LendCraftError>;
 
-    // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
-    // corresponding amount of token_a and token_b to "to".
-    // Returns amount of both tokens withdrawn
-    fn withdraw(e: Env, to: Address, share_amount: i128, min_a: i128, min_b: i128) -> (i128, i128);
-
-    fn get_rsrvs(e: Env) -> (i128, i128);
+    fn withdraw(e: Env, to: Address, share_amount: i128) -> Result<i128, LendCraftError>;
 }
 
 struct LendCraftTokenizer;
 
 #[contractimpl]
 impl LendCraftTokenizerTrait for LendCraftTokenizer {
-    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_a: Address, token_b: Address) {
-        if token_a >= token_b {
-            panic!("token_a must be less than token_b");
-        }
-
-        let share_contract = create_contract(&e, &token_wasm_hash, &token_a, &token_b);
+    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address) {
+        let share_contract = create_contract(&e, &token_wasm_hash, &token_usdc);
         token::Client::new(&e, &share_contract).initialize(
             &e.current_contract_address(),
             &7u32,
-            &Bytes::from_slice(&e, b"Pool Share Token"),
-            &Bytes::from_slice(&e, b"POOL"),
+            &Bytes::from_slice(&e, b"Lend Craft Token"),
+            &Bytes::from_slice(&e, b"LCT"),
         );
 
-        put_token_a(&e, token_a);
-        put_token_b(&e, token_b);
+        put_token_usdc(&e, token_usdc);
         put_token_share(&e, share_contract.try_into().unwrap());
         put_total_shares(&e, 0);
-        put_reserve_a(&e, 0);
-        put_reserve_b(&e, 0);
+        put_reserve_usdc(&e, 0);
     }
 
     fn share_id(e: Env) -> Address {
         get_token_share(&e)
     }
 
-    fn deposit(e: Env, to: Address, desired_a: i128, min_a: i128, desired_b: i128, min_b: i128) {
-        // Depositor needs to authorize the deposit
+    fn deposit(e: Env, to: Address, usdc_deposit: i128) -> Result<i128, LendCraftError> {
         to.require_auth();
 
-        let (reserve_a, reserve_b) = (get_reserve_a(&e), get_reserve_b(&e));
+        let zero = 0;
+        if usdc_deposit <= zero {
+            return Err(LendCraftError::DepositMustBePositive);
+        }
+        let reserve_usdc = get_reserve_usdc(&e);
+        let token_usdc_client = token::Client::new(&e, &get_token_usdc(&e));
+        token_usdc_client.transfer(&to, &e.current_contract_address(), &usdc_deposit);
 
-        // Calculate deposit amounts
-        let amounts = get_deposit_amounts(desired_a, min_a, desired_b, min_b, reserve_a, reserve_b);
-
-        let token_a_client = token::Client::new(&e, &get_token_a(&e));
-        let token_b_client = token::Client::new(&e, &get_token_b(&e));
-
-        token_a_client.transfer(&to, &e.current_contract_address(), &amounts.0);
-        token_b_client.transfer(&to, &e.current_contract_address(), &amounts.1);
-
-        // Now calculate how many new pool shares to mint
-        let (balance_a, balance_b) = (get_balance_a(&e), get_balance_b(&e));
+        let balance_usdc = get_balance_usdc(&e);
         let total_shares = get_total_shares(&e);
 
-        let zero = 0;
-        let new_total_shares = if reserve_a > zero && reserve_b > zero {
-            let shares_a = (balance_a * total_shares) / reserve_a;
-            let shares_b = (balance_b * total_shares) / reserve_b;
-            shares_a.min(shares_b)
+        let new_total_shares = if reserve_usdc > zero {
+            (balance_usdc * total_shares) / reserve_usdc
         } else {
-            (balance_a * balance_b).sqrt()
+            balance_usdc
         };
 
         mint_shares(&e, to, new_total_shares - total_shares);
+        put_reserve_usdc(&e, balance_usdc);
+
+        Ok(new_total_shares)
     }
 
-    fn withdraw(e: Env, to: Address, share_amount: i128, min_a: i128, min_b: i128) -> (i128, i128) {
+    fn withdraw(e: Env, to: Address, share_amount: i128) -> Result<i128, LendCraftError> {
         to.require_auth();
-
-        // First transfer the pool shares that need to be redeemed
         let share_token_client = token::Client::new(&e, &get_token_share(&e));
-        share_token_client.transfer(&to, &e.current_contract_address(), &share_amount);
 
-        let (balance_a, balance_b) = (get_balance_a(&e), get_balance_b(&e));
-        let balance_shares = get_balance_shares(&e);
-
-        let total_shares = get_total_shares(&e);
-
-        // Now calculate the withdraw amounts
-        let out_a = (balance_a * balance_shares) / total_shares;
-        let out_b = (balance_b * balance_shares) / total_shares;
-
-        if out_a < min_a || out_b < min_b {
-            panic!("min not satisfied");
+        if share_amount <= 0 {
+            return Err(LendCraftError::WithdrawalMustBePositive);
         }
 
-        burn_shares(&e, balance_shares);
-        transfer_a(&e, to.clone(), out_a);
-        transfer_b(&e, to, out_b);
-        put_reserve_a(&e, balance_a - out_a);
-        put_reserve_b(&e, balance_b - out_b);
+        if share_amount > share_token_client.balance(&to) {
+            return Err(LendCraftError::InsufficientBalance);
+        }
 
-        (out_a, out_b)
+        share_token_client.transfer(&to, &e.current_contract_address(), &share_amount);
+
+        let balance_usdc = get_balance_usdc(&e);
+        let balance_shares = get_balance_shares(&e);
+        let total_shares = get_total_shares(&e);
+
+        let out_usdc = (balance_usdc * balance_shares) / total_shares;
+
+        burn_shares(&e, balance_shares);
+        transfer_usdc(&e, to.clone(), out_usdc);
+        put_reserve_usdc(&e, balance_usdc - out_usdc);
+
+        Ok(out_usdc)
     }
 }

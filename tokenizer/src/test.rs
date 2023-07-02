@@ -1,102 +1,121 @@
 #![cfg(test)]
+extern crate std;
 
-use super::*;
+use crate::{token, LendCraftTokenizerClient};
 
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, IntoVal, Symbol};
 
-#[test]
-fn test_store() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let contract_address = env.register_contract(None, DataStoreContract);
-    let client = DataStoreContractClient::new(&env, &contract_address);
-    let u1 = Address::random(&env);
-    let u2 = Address::random(&env);
-    client.put(&u1, &bytes!(&env, 0x48656c6c6f20536f726f62616e21)); // This is the hex value for "Hello Soroban!"
-    assert_eq!(
-        client.get(&u1),
-        bytes!(&env, 0x48656c6c6f20536f726f62616e21)
+fn create_token_contract<'a>(e: &Env, admin: &Address) -> token::Client<'a> {
+    token::Client::new(e, &e.register_stellar_asset_contract(admin.clone()))
+}
+
+fn create_tokenizer_contract<'a>(
+    e: &Env,
+    token_wasm_hash: &BytesN<32>,
+    token_a: &Address,
+) -> LendCraftTokenizerClient<'a> {
+    let tokenizer =
+        LendCraftTokenizerClient::new(e, &e.register_contract(None, crate::LendCraftTokenizer {}));
+    tokenizer.initialize(token_wasm_hash, token_a);
+    tokenizer
+}
+
+fn install_token_wasm(e: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../token/target/wasm32-unknown-unknown/release/lendcraft_token_contract.wasm"
     );
-
-    assert_eq!(client.get(&u2).len(), 0);
-    client.put(&u2, &bytes![&env, 0x536f726f62616e2051756573742032]); // This is the hex value for "Soroban Quest 2"
-    assert_eq!(
-        client.get(&u2),
-        bytes![&env, 0x536f726f62616e2051756573742032]
-    );
-
-    assert_eq!(
-        client.get(&u1),
-        bytes![&env, 0x48656c6c6f20536f726f62616e21]
-    );
+    e.install_contract_wasm(WASM)
 }
 
 #[test]
-#[should_panic(expected = "Status(ContractError(2))")]
-fn test_store_value_too_short() {
-    let env = Env::default();
-    env.mock_all_auths();
+fn test_multi_user_deposit() {
+    let e = Env::default();
+    e.mock_all_auths();
 
-    let contract_address = env.register_contract(None, DataStoreContract);
-    let client = DataStoreContractClient::new(&env, &contract_address);
-    let u1 = Address::random(&env);
-    client.put(&u1, &bytes![&env, 0x007]);
-}
+    let admin1 = Address::random(&e);
+    let token_usdc = create_token_contract(&e, &admin1);
+    let user1 = Address::random(&e);
+    let user2 = Address::random(&e);
+    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
 
-pub struct CallerContract;
+    let token_share = token::Client::new(&e, &tokenizer.share_id());
 
-#[contractimpl]
-impl CallerContract {
-    pub fn try_put(env: Env, contract_address: Address, user: Address, data: Bytes) {
-        let cli = DataStoreContractClient::new(&env, &contract_address);
-        cli.put(&user, &data);
-    }
+    token_usdc.mint(&user1, &40);
+    token_usdc.mint(&user2, &70);
+    assert_eq!(token_usdc.balance(&user1), 40);
+    assert_eq!(token_usdc.balance(&user2), 70);
 
-    pub fn try_get(env: Env, contract_address: Address, owner: Address) -> Bytes {
-        let cli = DataStoreContractClient::new(&env, &contract_address);
-        cli.get(&owner)
-    }
-}
-
-#[test]
-fn test_contract_store() {
-    let env = Env::default();
-
-    env.mock_all_auths();
-
-    let contract_address_data_store = env.register_contract(None, DataStoreContract);
-    let data_store_client = DataStoreContractClient::new(&env, &contract_address_data_store);
-
-    let contract_address_caller = env.register_contract(None, CallerContract);
-    let caller_client = CallerContractClient::new(&env, &contract_address_caller);
-
-    caller_client.try_put(
-        &contract_address_data_store,
-        &contract_address_caller,
-        &bytes![&env, 0x48656c6c6f20536f726f62616e21],
-    );
-
+    tokenizer.deposit(&user1, &10);
     assert_eq!(
-        data_store_client.get(&contract_address_caller),
-        bytes![&env, 0x48656c6c6f20536f726f62616e21]
+        e.auths(),
+        [
+            (
+                user1.clone(),
+                tokenizer.address.clone(),
+                Symbol::short("deposit"),
+                (&user1, 10_i128).into_val(&e)
+            ),
+            (
+                user1.clone(),
+                token_usdc.address.clone(),
+                Symbol::short("transfer"),
+                (&user1, &tokenizer.address, 10_i128).into_val(&e)
+            )
+        ]
     );
-}
 
-#[test]
-fn test_contract_get() {
-    let env = Env::default();
+    tokenizer.deposit(&user2, &20);
+    assert_eq!(
+        e.auths(),
+        [
+            (
+                user2.clone(),
+                tokenizer.address.clone(),
+                Symbol::short("deposit"),
+                (&user2, 20_i128).into_val(&e)
+            ),
+            (
+                user2.clone(),
+                token_usdc.address.clone(),
+                Symbol::short("transfer"),
+                (&user2, &tokenizer.address, 20_i128).into_val(&e)
+            ),
+        ]
+    );
 
-    env.mock_all_auths();
+    assert_eq!(token_share.balance(&user1), 10);
+    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(token_usdc.balance(&user1), 30);
+    assert_eq!(token_usdc.balance(&tokenizer.address), 30);
 
-    let contract_address_data_store = env.register_contract(None, DataStoreContract);
-    let client_data_store = DataStoreContractClient::new(&env, &contract_address_data_store);
+    assert_eq!(token_share.balance(&user2), 20);
+    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(token_usdc.balance(&user2), 50);
+    assert_eq!(token_usdc.balance(&tokenizer.address), 30);
 
-    let contract_address_caller = env.register_contract(None, CallerContract);
-    let caller_client = CallerContractClient::new(&env, &contract_address_caller);
+    tokenizer.withdraw(&user1, &7);
+    assert_eq!(
+        e.auths(),
+        [
+            (
+                user1.clone(),
+                tokenizer.address.clone(),
+                Symbol::short("withdraw"),
+                (&user1, 7_i128).into_val(&e)
+            ),
+            (
+                user1.clone(),
+                token_share.address.clone(),
+                Symbol::short("transfer"),
+                (&user1, &tokenizer.address, 7_i128).into_val(&e)
+            )
+        ]
+    );
 
-    let u1 = Address::random(&env);
-    client_data_store.put(&u1, &bytes!(&env, 0x48656c6c6f20536f726f62616e21)); // This is the hex value for "Hello Soroban!"
-
-    let value = caller_client.try_get(&contract_address_data_store, &u1);
-    assert_eq!(value, bytes!(&env, 0x48656c6c6f20536f726f62616e21));
+    assert_eq!(token_usdc.balance(&user1), 37);
+    assert_eq!(token_share.balance(&user1), 3);
+    assert_eq!(token_usdc.balance(&user2), 50);
+    assert_eq!(token_share.balance(&user2), 20);
+    assert_eq!(token_usdc.balance(&tokenizer.address), 23);
+    assert_eq!(token_share.balance(&tokenizer.address), 0);
 }

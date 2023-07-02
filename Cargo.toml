@@ -1,7 +1,0 @@
-[workspace]
-
-members = [
-    "deployer",
-    "tokenizer",
-    "token"
-]
