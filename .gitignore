@@ -1,3 +1,6 @@
 /target
-/Cargo.lock
+/tokenizer/Cargo.lock
+/deployer/Cargo.lock
 /.idea
+.venv
+*.py
