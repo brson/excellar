@@ -55,7 +55,7 @@ fn calculate_musg_price(e: &Env) -> i128 {
 contractmeta!(key = "Description", val = "Money market product tokenizer");
 
 pub trait ExcellarTokenizerTrait {
-    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address);
+    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address, admin: Address);
 
     fn musg_id(e: Env) -> Address;
 
@@ -82,7 +82,7 @@ pub struct ExcellarTokenizer;
 
 #[contractimpl]
 impl ExcellarTokenizerTrait for ExcellarTokenizer {
-    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address) {
+    fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address, admin: Address) {
         let musg_contract = create_contract(&e, &token_wasm_hash, &token_usdc);
         token::Client::new(&e, &musg_contract).initialize(
             &e.current_contract_address(),
@@ -98,7 +98,7 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
         set_cash_reserves(&e, 0);
         set_fees(&e, 0);
         set_etf_price(&e, 1);
-        set_admin(&e, e.current_contract_address());
+        set_admin(&e, admin);
     }
 
     fn musg_id(e: Env) -> Address {

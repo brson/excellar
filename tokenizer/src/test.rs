@@ -13,12 +13,13 @@ fn create_tokenizer_contract<'a>(
     e: &Env,
     token_wasm_hash: &BytesN<32>,
     token_a: &Address,
+    admin: &Address,
 ) -> ExcellarTokenizerClient<'a> {
     let tokenizer = ExcellarTokenizerClient::new(
         e,
         &e.register_contract(None, crate::contract::ExcellarTokenizer {}),
     );
-    tokenizer.initialize(token_wasm_hash, token_a);
+    tokenizer.initialize(token_wasm_hash, token_a, admin);
     tokenizer
 }
 
@@ -38,7 +39,8 @@ fn test_multi_user_deposit() {
     let token_usdc = create_token_contract(&e, &admin1);
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     let token_share = token::Client::new(&e, &tokenizer.musg_id());
 
@@ -128,7 +130,8 @@ fn admin_withdraw_works() {
     e.mock_all_auths();
     let admin1 = Address::random(&e);
     let token_usdc = create_token_contract(&e, &admin1);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     tokenizer.set_etf_price(&100);
 }
@@ -139,7 +142,8 @@ fn test_set_get_etf_price() {
     e.mock_all_auths();
     let admin1 = Address::random(&e);
     let token_usdc = create_token_contract(&e, &admin1);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     tokenizer.set_etf_price(&100);
     assert_eq!(tokenizer.etf_price(), 100);
@@ -151,7 +155,8 @@ fn test_set_cash_reserves() {
     e.mock_all_auths();
     let admin1 = Address::random(&e);
     let token_usdc = create_token_contract(&e, &admin1);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     tokenizer.set_cash_reserves(&100);
     assert_eq!(tokenizer.cash_reserves(), 100);
@@ -163,7 +168,8 @@ fn test_set_fees() {
     e.mock_all_auths();
     let admin1 = Address::random(&e);
     let token_usdc = create_token_contract(&e, &admin1);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     tokenizer.set_fees(&100);
     assert_eq!(tokenizer.fees(), 100);
@@ -175,14 +181,21 @@ fn test_withdraw_admin() {
     e.mock_all_auths();
     let admin1 = Address::random(&e);
     let token_usdc = create_token_contract(&e, &admin1);
-    let tokenizer = create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
-    tokenizer.set_cash_reserves(&100);
-    tokenizer.set_fees(&100);
-    tokenizer.set_etf_price(&100);
+    let user1 = Address::random(&e);
+    let token_share = token::Client::new(&e, &tokenizer.musg_id());
 
-    tokenizer.withdraw_admin(&100);
-    assert_eq!(tokenizer.cash_reserves(), 0);
+    token_usdc.mint(&user1, &40);
+    tokenizer.deposit(&user1, &10);
+
+    tokenizer.withdraw_admin(&admin1, &10);
+    assert_eq!(token_share.balance(&user1), 10);
+    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.cash_reserves(), 10);
     assert_eq!(tokenizer.fees(), 0);
-    assert_eq!(tokenizer.etf_price(), 0);
+    assert_eq!(tokenizer.etf_price(), 1);
+    assert_eq!(token_usdc.balance(&user1), 30);
+    assert_eq!(token_usdc.balance(&tokenizer.address), 0);
 }
