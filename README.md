@@ -1,6 +1,6 @@
-# lendcraft
+# excellar
 
-Stellar LendCraft is a decentralized lending platform built on the Stellar Network. 
+Stellar excellar is a decentralized lending platform built on the Stellar Network. 
 It allows users to tokenize, lend and borrow money market assets.
 
 ## Getting Started
@@ -17,7 +17,7 @@ cargo test
 ```bash
 cargo build --target wasm32-unknown-unknown --release
 soroban contract deploy \
-    --wasm target/wasm32-unknown-unknown/release/lendcraft.wasm \
+    --wasm target/wasm32-unknown-unknown/release/excellar.wasm \
     --source S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022'
@@ -27,13 +27,13 @@ soroban contract deploy \
 
 ```bash
 soroban contract deploy \
-    --wasm token/target/wasm32-unknown-unknown/release/lendcraft_token_contract.wasm \
+    --wasm token/target/wasm32-unknown-unknown/release/excellar_token_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022'
     
 soroban contract invoke \
-    --wasm token/target/wasm32-unknown-unknown/release/lendcraft_token_contract.wasm \
+    --wasm token/target/wasm32-unknown-unknown/release/excellar_token_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
@@ -41,13 +41,13 @@ soroban contract invoke \
     -- initialize --admin CBGKDJ7R6UPYVCCVZJHWW6Z2PGHGWUNOJKDQ3MUYQIULPBGGMLFAUBEN --decimal 6 --name 5553444320537461626c65 --symbol 55534443
 
 soroban contract deploy \
-    --wasm tokenizer/target/wasm32-unknown-unknown/release/lendcraft_tokenizer_contract.wasm \
+    --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022'
     
 soroban contract invoke \
-    --wasm tokenizer/target/wasm32-unknown-unknown/release/lendcraft_tokenizer_contract.wasm \
+    --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
@@ -63,7 +63,7 @@ soroban contract invoke \
 ```bash
 
 soroban contract invoke \
-    --wasm token/target/wasm32-unknown-unknown/release/lendcraft_token_contract.wasm \
+    --wasm token/target/wasm32-unknown-unknown/release/excellar_token_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
@@ -74,7 +74,7 @@ soroban contract invoke \
 
 ```bash
 soroban contract invoke \
-    --wasm tokenizer/target/wasm32-unknown-unknown/release/lendcraft_tokenizer_contract.wasm \
+    --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
@@ -83,7 +83,7 @@ soroban contract invoke \
 
 
 soroban contract invoke \
-    --wasm tokenizer/target/wasm32-unknown-unknown/release/lendcraft_tokenizer_contract.wasm \
+    --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \

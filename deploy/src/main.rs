@@ -180,7 +180,6 @@ fn build_create_contract_tx(
     Ok((tx, Hash(contract_id.into())))
 }
 
-// #[tokio::main]
 fn main() {
     let cmd = Cmd::parse();
     let rt = tokio::runtime::Runtime::new().unwrap();

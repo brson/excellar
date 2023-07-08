@@ -1,6 +1,6 @@
 [package]
-name = "lendcraft-tokenizer-contract"
-description = "Main tokenization contract for LendCraft"
+name = "excellar-tokenizer-contract"
+description = "Main tokenization contract for excellar"
 version = "0.1.0"
 edition = "2021"
 

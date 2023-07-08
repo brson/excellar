@@ -1,6 +1,6 @@
 [package]
-name = "lendcraft-token-contract"
-description = "Lendcraft token contract"
+name = "excellar-token-contract"
+description = "excellar token contract"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,11 +8,11 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = { version = "0.8.4" }
-soroban-token-sdk = { version = "0.8.4" }
+soroban-sdk = { version = "0.8.7" }
+soroban-token-sdk = { version = "0.8.7" }
 
 [dev_dependencies]
-soroban-sdk = { version = "0.8.4", features = ["testutils"] }
+soroban-sdk = { version = "0.8.7", features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"
