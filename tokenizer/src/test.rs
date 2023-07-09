@@ -42,14 +42,16 @@ fn test_multi_user_deposit() {
     let tokenizer =
         create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
-    let token_share = token::Client::new(&e, &tokenizer.musg_id());
-
     token_usdc.mint(&user1, &40);
     token_usdc.mint(&user2, &70);
     assert_eq!(token_usdc.balance(&user1), 40);
     assert_eq!(token_usdc.balance(&user2), 70);
 
     tokenizer.deposit(&user1, &10);
+    assert_eq!(tokenizer.cash_reserves(), 10);
+    assert_eq!(tokenizer.price(), 1);
+    assert_eq!(tokenizer.etf_price(), 1);
+
     assert_eq!(
         e.auths(),
         [
@@ -87,13 +89,17 @@ fn test_multi_user_deposit() {
         ]
     );
 
-    assert_eq!(token_share.balance(&user1), 10);
-    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.balance(&user1), 10);
+    assert_eq!(tokenizer.balance(&tokenizer.address), 0);
     assert_eq!(token_usdc.balance(&user1), 30);
     assert_eq!(token_usdc.balance(&tokenizer.address), 30);
 
-    assert_eq!(token_share.balance(&user2), 20);
-    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.cash_reserves(), 0);
+    assert_eq!(tokenizer.price(), 1);
+    assert_eq!(tokenizer.etf_price(), 1);
+
+    assert_eq!(tokenizer.balance(&user2), 20);
+    assert_eq!(tokenizer.balance(&tokenizer.address), 0);
     assert_eq!(token_usdc.balance(&user2), 50);
     assert_eq!(token_usdc.balance(&tokenizer.address), 30);
 
@@ -109,7 +115,7 @@ fn test_multi_user_deposit() {
             ),
             (
                 user1.clone(),
-                token_share.address.clone(),
+                tokenizer.address.clone(),
                 Symbol::short("transfer"),
                 (&user1, &tokenizer.address, 7_i128).into_val(&e)
             )
@@ -117,11 +123,14 @@ fn test_multi_user_deposit() {
     );
 
     assert_eq!(token_usdc.balance(&user1), 37);
-    assert_eq!(token_share.balance(&user1), 3);
+    assert_eq!(tokenizer.balance(&user1), 3);
     assert_eq!(token_usdc.balance(&user2), 50);
-    assert_eq!(token_share.balance(&user2), 20);
+    assert_eq!(tokenizer.balance(&user2), 20);
     assert_eq!(token_usdc.balance(&tokenizer.address), 23);
-    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.cash_reserves(), 0);
+    assert_eq!(tokenizer.price(), 1);
+    assert_eq!(tokenizer.etf_price(), 1);
 }
 
 #[test]
@@ -185,17 +194,42 @@ fn test_withdraw_admin() {
         create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
 
     let user1 = Address::random(&e);
-    let token_share = token::Client::new(&e, &tokenizer.musg_id());
 
     token_usdc.mint(&user1, &40);
     tokenizer.deposit(&user1, &10);
 
     tokenizer.withdraw_admin(&admin1, &10);
-    assert_eq!(token_share.balance(&user1), 10);
-    assert_eq!(token_share.balance(&tokenizer.address), 0);
+    assert_eq!(tokenizer.balance(&user1), 10);
+    assert_eq!(tokenizer.balance(&tokenizer.address), 0);
     assert_eq!(tokenizer.cash_reserves(), 10);
+    assert_eq!(tokenizer.total(), 10);
     assert_eq!(tokenizer.fees(), 0);
     assert_eq!(tokenizer.etf_price(), 1);
+    assert_eq!(tokenizer.price(), 1);
     assert_eq!(token_usdc.balance(&user1), 30);
     assert_eq!(token_usdc.balance(&tokenizer.address), 0);
+}
+
+#[test]
+fn test_price_change() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin1 = Address::random(&e);
+    let token_usdc = create_token_contract(&e, &admin1);
+    let tokenizer =
+        create_tokenizer_contract(&e, &install_token_wasm(&e), &token_usdc.address, &admin1);
+
+    let user1 = Address::random(&e);
+
+    token_usdc.mint(&user1, &100);
+    tokenizer.deposit(&user1, &100);
+
+    tokenizer.set_fees(&10);
+    tokenizer.set_cash_reserves(&5);
+    assert_eq!(tokenizer.cash_reserves(), 5);
+    assert_eq!(tokenizer.total(), 100);
+    assert_eq!(tokenizer.fees(), 10);
+    assert_eq!(tokenizer.etf_price(), 1);
+    // TODO: Discuss how to handle this
+    assert_eq!(tokenizer.price(), 0);
 }

@@ -48,7 +48,7 @@ fn calculate_musg_price(e: &Env) -> i128 {
         return 1;
     }
 
-    (etf_price + cash_reserves + fees) / total_musg
+    (etf_price + cash_reserves - fees) / total_musg
 }
 
 // Metadata that is added on to the WASM custom section
@@ -76,6 +76,12 @@ pub trait ExcellarTokenizerTrait {
     fn withdraw(e: Env, to: Address, musg_amount: i128) -> Result<i128, ExcellarError>;
 
     fn withdraw_admin(e: Env, to: Address, usdc_amount: i128) -> Result<i128, ExcellarError>;
+
+    fn balance(e: Env, account: Address) -> i128;
+
+    fn price(e: Env) -> i128;
+
+    fn total(e: Env) -> i128;
 }
 
 pub struct ExcellarTokenizer;
@@ -131,8 +137,21 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
 
     fn set_fees(e: Env, amount: i128) {
         require_admin(&e);
-        require_positive(amount);
+        require_positive(get_etf_price(&e) + get_cash_reserves(&e) - amount);
         set_fees(&e, amount)
+    }
+
+    fn balance(e: Env, account: Address) -> i128 {
+        let musg_contract = get_token_musg(&e);
+        token::Client::new(&e, &musg_contract).balance(&account)
+    }
+
+    fn price(e: Env) -> i128 {
+        calculate_musg_price(&e)
+    }
+
+    fn total(e: Env) -> i128 {
+        get_total_musg(&e)
     }
 
     fn deposit(e: Env, to: Address, usdc_deposit: i128) -> Result<i128, ExcellarError> {

@@ -1,4 +1,5 @@
 use soroban_sdk::{token, Address, ConversionError, Env, RawVal, TryFromVal};
+use crate::utils::require_positive;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -37,12 +38,14 @@ pub fn get_total_musg(e: &Env) -> i128 {
 }
 
 pub fn add_to_cash_reserves(e: &Env, amount: i128) -> i128 {
+    require_positive(amount);
     let cash_reserves = get_cash_reserves(e);
     let new_cash = cash_reserves + amount;
     set_cash_reserves(e, new_cash);
     new_cash
 }
 pub fn subtract_from_cash_reserves(e: &Env, amount: i128) -> i128 {
+    require_positive(amount);
     let cash_reserves = get_cash_reserves(e);
     let new_cash = cash_reserves - amount;
     set_cash_reserves(e, cash_reserves - amount);
