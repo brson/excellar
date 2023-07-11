@@ -42,7 +42,7 @@ soroban contract invoke \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
     --id CAR2TYBD2SH24SVJUUA5G5RIUKYTV3BHUFP62UNCGX45RUOVXOHWCSBE \
-    -- initialize --admin CACLTFEE37H73JK7MMOCRSS2MOGR7DX7OUDRKAPDFHDXQHEGQZDHKH7U --decimal 6 --name 5553444320537461626c65 --symbol 55534443
+    -- initialize --admin CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 --decimal 6 --name 5553444320537461626c65 --symbol 55534443
 ```
 #### Deploy the tokenizer contract
 ```bash
@@ -60,7 +60,7 @@ soroban contract invoke \
     --source-account S... \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
-    --id CACLTFEE37H73JK7MMOCRSS2MOGR7DX7OUDRKAPDFHDXQHEGQZDHKH7U \
+    --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
     -- initialize --token-wasm-hash 70c9fc851611f219d8beab55f4e06a9ff96f02749957fda390856a36e3770f33 --token-usdc CAR2TYBD2SH24SVJUUA5G5RIUKYTV3BHUFP62UNCGX45RUOVXOHWCSBE --admin GDOJ6OUGJYOQL2SQ52A2R33KOYHJMJ2DCLZZEYUXUKJBB3CSIO5ZKKQ5
 ```
 
@@ -85,7 +85,7 @@ soroban contract invoke \
     --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
-    --id CACLTFEE37H73JK7MMOCRSS2MOGR7DX7OUDRKAPDFHDXQHEGQZDHKH7U \
+    --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
     -- deposit --to GBGXBIEMYC7F2OVWVXKNJVYXSRUS4BXF57L5IZWHMDJIPTFPP5Z7TNIP --usdc-deposit 20
 ```
 
@@ -96,7 +96,7 @@ soroban contract invoke \
     --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
-    --id CACLTFEE37H73JK7MMOCRSS2MOGR7DX7OUDRKAPDFHDXQHEGQZDHKH7U \
+    --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
     -- withdraw --to GBGXBIEMYC7F2OVWVXKNJVYXSRUS4BXF57L5IZWHMDJIPTFPP5Z7TNIP --share-amount 20
 ```
 ##### Withdraw all as admin
@@ -107,6 +107,6 @@ soroban contract invoke \
     --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
-    --id CACLTFEE37H73JK7MMOCRSS2MOGR7DX7OUDRKAPDFHDXQHEGQZDHKH7U \
+    --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
     -- withdraw_admin --to GDOJ6OUGJYOQL2SQ52A2R33KOYHJMJ2DCLZZEYUXUKJBB3CSIO5ZKKQ5 --usdc-amount 20
 ```
