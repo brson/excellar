@@ -94,13 +94,12 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
             &e.current_contract_address(),
             &7u32,
             &Bytes::from_slice(&e, b"Excellar Mint"),
-            &Bytes::from_slice(&e, b"mUSG"),
+            &Bytes::from_slice(&e, b"XUSG"),
         );
 
         set_token_usdc(&e, token_usdc);
         set_token_musg(&e, musg_contract);
         set_total_musg(&e, 0);
-        set_cash_reserves(&e, 0);
         set_cash_reserves(&e, 0);
         set_fees(&e, 0);
         set_etf_price(&e, 1);
@@ -118,7 +117,9 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn set_etf_price(e: Env, price: i128) {
         require_admin(&e);
         require_strictly_positive(price);
-        set_etf_price(&e, price)
+        let etf_price = set_etf_price(&e, price);
+        require_strictly_positive(calculate_musg_price(&e));
+        return etf_price;
     }
 
     fn cash_reserves(e: Env) -> i128 {
@@ -128,7 +129,9 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn set_cash_reserves(e: Env, amount: i128) {
         require_admin(&e);
         require_positive(amount);
-        set_cash_reserves(&e, amount)
+        let cash_reserves = set_cash_reserves(&e, amount);
+        require_strictly_positive(calculate_musg_price(&e));
+        return cash_reserves;
     }
 
     fn fees(e: Env) -> i128 {
@@ -137,8 +140,10 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
 
     fn set_fees(e: Env, amount: i128) {
         require_admin(&e);
-        require_positive(get_etf_price(&e) + get_cash_reserves(&e) - amount);
-        set_fees(&e, amount)
+        require_positive(amount);
+        let fees = set_fees(&e, amount);
+        require_strictly_positive(calculate_musg_price(&e));
+        return fees;
     }
 
     fn balance(e: Env, account: Address) -> i128 {

@@ -1,5 +1,5 @@
-use soroban_sdk::{token, Address, ConversionError, Env, RawVal, TryFromVal};
 use crate::utils::require_positive;
+use soroban_sdk::{token, Address, ConversionError, Env, RawVal, TryFromVal};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

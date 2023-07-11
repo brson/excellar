@@ -9,7 +9,7 @@ deploy-token:
 
 deploy-excellar:
 	soroban contract deploy \
-		--wasm target/wasm32-unknown-unknown/release/excellar.wasm \
-		--source SASA7CRB4F6HZEMMJVIHA3PTSCIFSZ7YIU7VHFJX3YSJTELSID46Y3UG \
+		--wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
+		--source SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
 		--rpc-url https://rpc-futurenet.stellar.org:443 \
 		--network-passphrase 'Test SDF Future Network ; October 2022'
