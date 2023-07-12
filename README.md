@@ -71,33 +71,33 @@ soroban contract invoke \
 
 soroban contract invoke \
     --wasm token/target/wasm32-unknown-unknown/release/excellar_token_contract.wasm \
-    --source-account S... \
+    --source-account SCBDHL6YTFK4FUQIWRXPM2HZ6KAA7YECCOK6Y7RTYLTWRNJ2XDHHBH5R \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
     --id CAR2TYBD2SH24SVJUUA5G5RIUKYTV3BHUFP62UNCGX45RUOVXOHWCSBE \
-    -- mint --to GBGXBIEMYC7F2OVWVXKNJVYXSRUS4BXF57L5IZWHMDJIPTFPP5Z7TNIP --amount 100
+    -- mint --to {YOUR_XLM_PK} --amount 100
 ```
 
 #### Deposit into the tokenizer contract
 ```bash
 soroban contract invoke \
     --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
-    --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
+    --source-account {YOUR_XLM_SK}  \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
     --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
-    -- deposit --to GBGXBIEMYC7F2OVWVXKNJVYXSRUS4BXF57L5IZWHMDJIPTFPP5Z7TNIP --usdc-deposit 20
+    -- deposit --to {YOUR_XLM_PK} --usdc-deposit 20
 ```
 
 #### Withdraw own deposit from tokenizer contract
 ```bash
 soroban contract invoke \
     --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
-    --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
+    --source-account {YOUR_XLM_SK}  \
     --rpc-url https://rpc-futurenet.stellar.org:443 \
     --network-passphrase 'Test SDF Future Network ; October 2022' \
     --id CAIAD7B6A5RCGJPUILM4CKAHOSBCSXLH2IO4EZLZG6IJ52WJJWDBXRE2 \
-    -- withdraw --to GBGXBIEMYC7F2OVWVXKNJVYXSRUS4BXF57L5IZWHMDJIPTFPP5Z7TNIP --share-amount 20
+    -- withdraw --to {YOUR_XLM_PK} --share-amount 20
 ```
 ##### Withdraw all as admin
 
