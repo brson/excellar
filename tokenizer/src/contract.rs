@@ -4,30 +4,30 @@ use crate::token;
 use crate::utils;
 use soroban_sdk::{contractimpl, contractmeta, Address, Bytes, BytesN, Env};
 use storage::{
-    get_cash_reserves, get_etf_price, get_fees, get_token_musg, get_token_usdc, get_total_musg,
-    require_admin, set_admin, set_cash_reserves, set_etf_price, set_fees, set_token_musg,
-    set_token_usdc, set_total_musg,
+    get_cash_reserves, get_etf_market_value, get_fees, get_token_xusg, get_token_usdc, get_total_xusg,
+    require_admin, set_admin, set_cash_reserves, set_etf_market_value, set_fees, set_token_xusg,
+    set_token_usdc, set_total_xusg,
 };
 
 use crate::storage::{add_to_cash_reserves, get_balance_usdc, subtract_from_cash_reserves};
 use token::create_contract;
 use utils::{require_positive, require_strictly_positive};
 
-fn burn_musg(e: &Env, amount: i128) {
-    let total = get_total_musg(e);
-    let musg_contract = get_token_musg(e);
+fn burn_xusg(e: &Env, amount: i128) {
+    let total = get_total_xusg(e);
+    let xusg_contract = get_token_xusg(e);
 
-    token::Client::new(e, &musg_contract).burn(&e.current_contract_address(), &amount);
-    set_total_musg(e, total - amount);
+    token::Client::new(e, &xusg_contract).burn(&e.current_contract_address(), &amount);
+    set_total_xusg(e, total - amount);
 }
 
-fn mint_musg(e: &Env, to: Address, amount: i128) {
-    let total = get_total_musg(e);
-    let musg_contract_id = get_token_musg(e);
+fn mint_xusg(e: &Env, to: Address, amount: i128) {
+    let total = get_total_xusg(e);
+    let xusg_contract_id = get_token_xusg(e);
 
-    token::Client::new(e, &musg_contract_id).mint(&to, &amount);
+    token::Client::new(e, &xusg_contract_id).mint(&to, &amount);
 
-    set_total_musg(e, total + amount);
+    set_total_xusg(e, total + amount);
 }
 
 fn transfer(e: &Env, token: Address, to: Address, amount: i128) {
@@ -38,17 +38,21 @@ fn transfer_usdc(e: &Env, to: Address, amount: i128) {
     transfer(e, get_token_usdc(e), to, amount);
 }
 
-fn calculate_musg_price(e: &Env) -> i128 {
+fn calculate_xusg_price(e: &Env) -> i128 {
     let cash_reserves = get_cash_reserves(e);
     let fees = get_fees(e);
-    let etf_price = get_etf_price(e);
-    let total_musg = get_total_musg(e);
+    let etf_market_value = get_etf_market_value(e);
+    let total_xusg = get_total_xusg(e);
 
-    if total_musg <= 0 {
+    if total_xusg <= 0 {
         return 1;
     }
 
-    (etf_price + cash_reserves - fees) / total_musg
+    if etf_market_value + cash_reserves - fees == 0 {
+        return 1;
+    }
+
+    (etf_market_value + cash_reserves - fees) / total_xusg
 }
 
 // Metadata that is added on to the WASM custom section
@@ -57,11 +61,11 @@ contractmeta!(key = "Description", val = "Money market product tokenizer");
 pub trait ExcellarTokenizerTrait {
     fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address, admin: Address);
 
-    fn musg_id(e: Env) -> Address;
+    fn xusg_id(e: Env) -> Address;
 
-    fn etf_price(e: Env) -> i128;
+    fn etf_market_value(e: Env) -> i128;
 
-    fn set_etf_price(e: Env, price: i128);
+    fn set_etf_market_value(e: Env, price: i128);
 
     fn cash_reserves(e: Env) -> i128;
 
@@ -73,7 +77,7 @@ pub trait ExcellarTokenizerTrait {
 
     fn deposit(e: Env, to: Address, usdc_amount: i128) -> Result<i128, ExcellarError>;
 
-    fn withdraw(e: Env, to: Address, musg_amount: i128) -> Result<i128, ExcellarError>;
+    fn withdraw(e: Env, to: Address, xusg_amount: i128) -> Result<i128, ExcellarError>;
 
     fn withdraw_admin(e: Env, to: Address, usdc_amount: i128) -> Result<i128, ExcellarError>;
 
@@ -89,8 +93,8 @@ pub struct ExcellarTokenizer;
 #[contractimpl]
 impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address, admin: Address) {
-        let musg_contract = create_contract(&e, &token_wasm_hash, &token_usdc);
-        token::Client::new(&e, &musg_contract).initialize(
+        let xusg_contract = create_contract(&e, &token_wasm_hash, &token_usdc);
+        token::Client::new(&e, &xusg_contract).initialize(
             &e.current_contract_address(),
             &7u32,
             &Bytes::from_slice(&e, b"Excellar Mint"),
@@ -98,28 +102,27 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
         );
 
         set_token_usdc(&e, token_usdc);
-        set_token_musg(&e, musg_contract);
-        set_total_musg(&e, 0);
+        set_token_xusg(&e, xusg_contract);
+        set_total_xusg(&e, 0);
         set_cash_reserves(&e, 0);
         set_fees(&e, 0);
-        set_etf_price(&e, 1);
+        set_etf_market_value(&e, 0);
         set_admin(&e, admin);
     }
 
-    fn musg_id(e: Env) -> Address {
-        get_token_musg(&e)
+    fn xusg_id(e: Env) -> Address {
+        get_token_xusg(&e)
     }
 
-    fn etf_price(e: Env) -> i128 {
-        get_etf_price(&e)
+    fn etf_market_value(e: Env) -> i128 {
+        get_etf_market_value(&e)
     }
 
-    fn set_etf_price(e: Env, price: i128) {
+    fn set_etf_market_value(e: Env, price: i128) {
         require_admin(&e);
         require_strictly_positive(price);
-        let etf_price = set_etf_price(&e, price);
-        require_strictly_positive(calculate_musg_price(&e));
-        return etf_price;
+        set_etf_market_value(&e, price);
+        require_strictly_positive(calculate_xusg_price(&e));
     }
 
     fn cash_reserves(e: Env) -> i128 {
@@ -129,9 +132,8 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn set_cash_reserves(e: Env, amount: i128) {
         require_admin(&e);
         require_positive(amount);
-        let cash_reserves = set_cash_reserves(&e, amount);
-        require_strictly_positive(calculate_musg_price(&e));
-        return cash_reserves;
+        set_cash_reserves(&e, amount);
+        require_strictly_positive(calculate_xusg_price(&e));
     }
 
     fn fees(e: Env) -> i128 {
@@ -141,22 +143,21 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn set_fees(e: Env, amount: i128) {
         require_admin(&e);
         require_positive(amount);
-        let fees = set_fees(&e, amount);
-        require_strictly_positive(calculate_musg_price(&e));
-        return fees;
+        set_fees(&e, amount);
+        require_strictly_positive(calculate_xusg_price(&e));
     }
 
     fn balance(e: Env, account: Address) -> i128 {
-        let musg_contract = get_token_musg(&e);
-        token::Client::new(&e, &musg_contract).balance(&account)
+        let xusg_contract = get_token_xusg(&e);
+        token::Client::new(&e, &xusg_contract).balance(&account)
     }
 
     fn price(e: Env) -> i128 {
-        calculate_musg_price(&e)
+        calculate_xusg_price(&e)
     }
 
     fn total(e: Env) -> i128 {
-        get_total_musg(&e)
+        get_total_xusg(&e)
     }
 
     fn deposit(e: Env, to: Address, usdc_deposit: i128) -> Result<i128, ExcellarError> {
@@ -169,34 +170,34 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
         let token_usdc_client = token::Client::new(&e, &get_token_usdc(&e));
         token_usdc_client.transfer(&to, &e.current_contract_address(), &usdc_deposit);
 
-        let musg_price = calculate_musg_price(&e);
-        let musg_issued = usdc_deposit / musg_price;
+        let xusg_price = calculate_xusg_price(&e);
+        let xusg_issued = usdc_deposit / xusg_price;
         add_to_cash_reserves(&e, usdc_deposit);
 
-        mint_musg(&e, to, musg_issued);
+        mint_xusg(&e, to, xusg_issued);
 
-        Ok(musg_issued)
+        Ok(xusg_issued)
     }
 
-    fn withdraw(e: Env, to: Address, musg_amount: i128) -> Result<i128, ExcellarError> {
+    fn withdraw(e: Env, to: Address, xusg_amount: i128) -> Result<i128, ExcellarError> {
         to.require_auth();
-        let musg_token_client = token::Client::new(&e, &get_token_musg(&e));
+        let xusg_token_client = token::Client::new(&e, &get_token_xusg(&e));
 
-        if musg_amount <= 0 {
+        if xusg_amount <= 0 {
             return Err(ExcellarError::WithdrawalMustBePositive);
         }
 
-        if musg_amount > musg_token_client.balance(&to) {
+        if xusg_amount > xusg_token_client.balance(&to) {
             return Err(ExcellarError::InsufficientBalance);
         }
 
-        musg_token_client.transfer(&to, &e.current_contract_address(), &musg_amount);
+        xusg_token_client.transfer(&to, &e.current_contract_address(), &xusg_amount);
 
-        let musg_price = calculate_musg_price(&e);
-        let out_usdc = musg_amount * musg_price;
+        let xusg_price = calculate_xusg_price(&e);
+        let out_usdc = xusg_amount * xusg_price;
 
         subtract_from_cash_reserves(&e, out_usdc);
-        burn_musg(&e, musg_amount);
+        burn_xusg(&e, xusg_amount);
 
         transfer_usdc(&e, to, out_usdc);
 

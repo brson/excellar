@@ -5,8 +5,8 @@ use soroban_sdk::{token, Address, ConversionError, Env, RawVal, TryFromVal};
 #[repr(u32)]
 pub enum DataKey {
     TokenUSDC = 1,
-    TokenMUSG = 2,
-    TotalMUSG = 3,
+    TokenXUSG = 2,
+    TotalXUSG = 3,
     MarketETFPrice = 5,
     ReservesCash = 6,
     Admin = 7,
@@ -21,7 +21,7 @@ impl TryFromVal<Env, DataKey> for RawVal {
     }
 }
 
-pub fn get_etf_price(e: &Env) -> i128 {
+pub fn get_etf_market_value(e: &Env) -> i128 {
     e.storage().get_unchecked(&DataKey::MarketETFPrice).unwrap()
 }
 
@@ -29,12 +29,12 @@ pub fn get_token_usdc(e: &Env) -> Address {
     e.storage().get_unchecked(&DataKey::TokenUSDC).unwrap()
 }
 
-pub fn get_token_musg(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::TokenMUSG).unwrap()
+pub fn get_token_xusg(e: &Env) -> Address {
+    e.storage().get_unchecked(&DataKey::TokenXUSG).unwrap()
 }
 
-pub fn get_total_musg(e: &Env) -> i128 {
-    e.storage().get_unchecked(&DataKey::TotalMUSG).unwrap()
+pub fn get_total_xusg(e: &Env) -> i128 {
+    e.storage().get_unchecked(&DataKey::TotalXUSG).unwrap()
 }
 
 pub fn add_to_cash_reserves(e: &Env, amount: i128) -> i128 {
@@ -71,19 +71,19 @@ pub fn set_token_usdc(e: &Env, contract: Address) {
     e.storage().set(&DataKey::TokenUSDC, &contract);
 }
 
-pub fn set_token_musg(e: &Env, contract: Address) {
-    e.storage().set(&DataKey::TokenMUSG, &contract);
+pub fn set_token_xusg(e: &Env, contract: Address) {
+    e.storage().set(&DataKey::TokenXUSG, &contract);
 }
 
-pub fn set_total_musg(e: &Env, amount: i128) {
-    e.storage().set(&DataKey::TotalMUSG, &amount)
+pub fn set_total_xusg(e: &Env, amount: i128) {
+    e.storage().set(&DataKey::TotalXUSG, &amount)
 }
 
 pub fn set_cash_reserves(e: &Env, amount: i128) {
     e.storage().set(&DataKey::ReservesCash, &amount)
 }
 
-pub fn set_etf_price(e: &Env, price: i128) {
+pub fn set_etf_market_value(e: &Env, price: i128) {
     e.storage().set(&DataKey::MarketETFPrice, &price)
 }
 
