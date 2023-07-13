@@ -1,7 +1,6 @@
 # excellar
 
-Stellar excellar is a decentralized lending platform built on the Stellar Network. 
-It allows users to tokenize, lend and borrow money market assets.
+Excellar is a real-world asset tokenization platform built on the Stellar Network. Users can tokenize real-world assets, such as U.S. Government Treasury bills, and then use these tokens as collateral to borrow stables from the xRepo protocol, which will be built by the Excellar team in the next phase.   
 
 ## Getting Started
 ```bash
@@ -15,8 +14,9 @@ cargo test
 ```
 
 ## Contract Purpose
-The following contract allows customers to deposit USDC collateral and get on chain representation in the form of XUSG of a real world bond. 
-Additionally, admins can periodically update the asset price, cash reserves and fees, associated with managing the contract.
+The following contract allows customers to deposit USDC collateral and get on-chain representation as XUSG of a real-world asset (U.S. Government Treasury Bills). 
+
+Additionally, admins can periodically update the asset price, cash reserves, and fees associated with managing the contract.
 
 ## Contract API 
 
@@ -80,8 +80,8 @@ soroban contract invoke \
   -- deposit --to {YOUR_XLM_PK} --usdc-deposit 20
 ```
 
-#### Withdraw own deposit from tokenizer contract
-If the price of XUSG has gone up or if we want to lower our exposure, we can burn the XUSG we have and get back the USDC collateral, by calling the `withdraw` function as specify the amount of XUSG we want to withdraw.
+#### Withdraw some or all of your deposit from the tokenizer contract
+If the price of XUSG has gone up or you want to lower your exposure, you can burn some or all of your XUSG and get back the converted USDC collateral by calling the `withdraw` function and specifying the amount of XUSG you want to burn.
 
 ```bash
 soroban contract invoke \
@@ -132,5 +132,3 @@ So the `xusg_price` would be calculated as: `(etf_market_value + cash_reserves -
 Once we buy the ETF, then the calculation becomes: `(etf_market_value + cash_reserves - fees) / total_xusg = (5000 + 0 - 0) / 5000 = 1`
 
 If the price of the ETF was to double then `xusg_price` becomes: `(etf_market_value + cash_reserves - fees) / total_xusg = (10000 + 0 - 0) / 5000 = 2`
-
-You will notice that small movements in the price of the ETF will not affect the price of the bond on chain.
