@@ -118,10 +118,10 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
         get_etf_market_value(&e)
     }
 
-    fn set_etf_market_value(e: Env, price: i128) {
+    fn set_etf_market_value(e: Env, value: i128) {
         require_admin(&e);
-        require_strictly_positive(price);
-        set_etf_market_value(&e, price);
+        require_strictly_positive(value);
+        set_etf_market_value(&e, value);
         require_strictly_positive(calculate_xusg_price(&e));
     }
 

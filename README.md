@@ -24,9 +24,9 @@ Additionally, admins can periodically update the asset price, cash reserves and 
 
 - `soroban {...params} xusg_id`: Fetches and returns the ID/address of the XUSG token in the contract.
 
-- `soroban {...params} etf_market_value`: Fetches and returns the price of the ETF value in the contract.
+- `soroban {...params} etf_market_value`: Fetches and returns the value of the ETF value in the contract.
 
-- `soroban {...params} set_etf_market_value --price=<i128>`: Sets the price of the ETF in the contract (admin only).
+- `soroban {...params} set_etf_market_value --value=<i128>`: Sets the value of the ETF in the contract (admin only).
 
 - `soroban {...params} cash_reserves`: Fetches and returns the amount of cash reserves in the contract.
 
@@ -76,7 +76,7 @@ soroban contract invoke \
   --source-account {YOUR_XLM_SK} \
   --rpc-url https://rpc-futurenet.stellar.org:443 \
   --network-passphrase 'Test SDF Future Network ; October 2022' \
-  --id CBL6TH2H7MHTZGXXJJJ4KYVE3Z4PPJIUM43S244RQ5N4POD3GAGNEO55 \
+  --id CADNYYFRDL3L4FSUINUK7OQTSCUUWHIWE6KSCTN3TWCIEKJC42OKJK7Y \
   -- deposit --to {YOUR_XLM_PK} --usdc-deposit 20
 ```
 
@@ -88,8 +88,8 @@ soroban contract invoke \
   --wasm tokenizer/target/wasm32-unknown-unknown/release/excellar_tokenizer_contract.wasm \
   --source-account {YOUR_XLM_SK} \
   --rpc-url https://rpc-futurenet.stellar.org:443 \
-  --network-passphrase 'Test SDF Future Network ; October 2022' \
-  --id CBL6TH2H7MHTZGXXJJJ4KYVE3Z4PPJIUM43S244RQ5N4POD3GAGNEO55 \
+  --network-passphrase 'Test SDF Future Network ; October 2022' \An
+  --id CADNYYFRDL3L4FSUINUK7OQTSCUUWHIWE6KSCTN3TWCIEKJC42OKJK7Y \
   -- withdraw --to {YOUR_XLM_PK} --share-amount 20
 ```
 ##### Withdraw all as admin
@@ -102,7 +102,7 @@ soroban contract invoke \
   --source-account SAVQKTSXS3T2VNXQRESDPWEAYT5HCSA6GRXPCGUF6HZDM2EOLGYDHFY6 \
   --rpc-url https://rpc-futurenet.stellar.org:443 \
   --network-passphrase 'Test SDF Future Network ; October 2022' \
-  --id CBL6TH2H7MHTZGXXJJJ4KYVE3Z4PPJIUM43S244RQ5N4POD3GAGNEO55 \
+  --id CADNYYFRDL3L4FSUINUK7OQTSCUUWHIWE6KSCTN3TWCIEKJC42OKJK7Y \
   -- withdraw_admin --to GDOJ6OUGJYOQL2SQ52A2R33KOYHJMJ2DCLZZEYUXUKJBB3CSIO5ZKKQ5 --usdc-amount 20
 ```
 ## Price Calculation
