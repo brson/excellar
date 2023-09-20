@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-soroban-sdk = { version = "0.8.4", features = ["testutils"] }
-soroban-cli = "0.8.7"
+soroban-sdk = { version = "20.0.0-rc1", features = ["testutils"] }
+soroban-cli = "20.0.0-rc1"
 clap = { version = "4.1.8", features = [ "derive" ] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 thiserror = "1.0.31"

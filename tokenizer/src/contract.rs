@@ -2,11 +2,11 @@ use crate::error::ExcellarError;
 use crate::storage;
 use crate::token;
 use crate::utils;
-use soroban_sdk::{contractimpl, contractmeta, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, BytesN, Env, IntoVal};
 use storage::{
-    get_cash_reserves, get_etf_market_value, get_fees, get_token_xusg, get_token_usdc, get_total_xusg,
-    require_admin, set_admin, set_cash_reserves, set_etf_market_value, set_fees, set_token_xusg,
-    set_token_usdc, set_total_xusg,
+    get_cash_reserves, get_etf_market_value, get_fees, get_token_usdc, get_token_xusg,
+    get_total_xusg, require_admin, set_admin, set_cash_reserves, set_etf_market_value, set_fees,
+    set_token_usdc, set_token_xusg, set_total_xusg,
 };
 
 use crate::storage::{add_to_cash_reserves, get_balance_usdc, subtract_from_cash_reserves};
@@ -88,17 +88,18 @@ pub trait ExcellarTokenizerTrait {
     fn total(e: Env) -> i128;
 }
 
+#[contract]
 pub struct ExcellarTokenizer;
 
 #[contractimpl]
 impl ExcellarTokenizerTrait for ExcellarTokenizer {
     fn initialize(e: Env, token_wasm_hash: BytesN<32>, token_usdc: Address, admin: Address) {
-        let xusg_contract = create_contract(&e, &token_wasm_hash, &token_usdc);
+        let xusg_contract = create_contract(&e, token_wasm_hash, &token_usdc);
         token::Client::new(&e, &xusg_contract).initialize(
             &e.current_contract_address(),
-            &7u32,
-            &Bytes::from_slice(&e, b"Excellar Mint"),
-            &Bytes::from_slice(&e, b"XUSG"),
+            &7,
+            &"Excellar Mint".into_val(&e),
+            &"XUSG".into_val(&e),
         );
 
         set_token_usdc(&e, token_usdc);
@@ -167,8 +168,8 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
         if usdc_deposit <= zero {
             return Err(ExcellarError::DepositMustBePositive);
         }
-        let token_usdc_client = token::Client::new(&e, &get_token_usdc(&e));
-        token_usdc_client.transfer(&to, &e.current_contract_address(), &usdc_deposit);
+        let token_usdc_token = token::Client::new(&e, &get_token_usdc(&e));
+        token_usdc_token.transfer(&to, &e.current_contract_address(), &usdc_deposit);
 
         let xusg_price = calculate_xusg_price(&e);
         let xusg_issued = usdc_deposit / xusg_price;
@@ -181,17 +182,17 @@ impl ExcellarTokenizerTrait for ExcellarTokenizer {
 
     fn withdraw(e: Env, to: Address, xusg_amount: i128) -> Result<i128, ExcellarError> {
         to.require_auth();
-        let xusg_token_client = token::Client::new(&e, &get_token_xusg(&e));
+        let token_usdc_token = token::Client::new(&e, &get_token_xusg(&e));
 
         if xusg_amount <= 0 {
             return Err(ExcellarError::WithdrawalMustBePositive);
         }
 
-        if xusg_amount > xusg_token_client.balance(&to) {
+        if xusg_amount > token_usdc_token.balance(&to) {
             return Err(ExcellarError::InsufficientBalance);
         }
 
-        xusg_token_client.transfer(&to, &e.current_contract_address(), &xusg_amount);
+        token_usdc_token.transfer(&to, &e.current_contract_address(), &xusg_amount);
 
         let xusg_price = calculate_xusg_price(&e);
         let out_usdc = xusg_amount * xusg_price;

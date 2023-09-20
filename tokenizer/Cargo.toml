@@ -12,10 +12,10 @@ testutils = ["soroban-sdk/testutils"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-soroban-sdk = "0.8.7"
+soroban-sdk = "20.0.0-rc1"
 
 [dev_dependencies]
-soroban-sdk = { version = "0.8.7", features = ["testutils"] }
+soroban-sdk = { version = "20.0.0-rc1", features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"

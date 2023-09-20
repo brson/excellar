@@ -1,5 +1,5 @@
 use crate::utils::require_positive;
-use soroban_sdk::{token, Address, ConversionError, Env, RawVal, TryFromVal};
+use soroban_sdk::{token, Address, ConversionError, Env, TryFromVal, Val};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -12,8 +12,7 @@ pub enum DataKey {
     Admin = 7,
     Fees = 8,
 }
-
-impl TryFromVal<Env, DataKey> for RawVal {
+impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;
 
     fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
@@ -22,19 +21,22 @@ impl TryFromVal<Env, DataKey> for RawVal {
 }
 
 pub fn get_etf_market_value(e: &Env) -> i128 {
-    e.storage().get_unchecked(&DataKey::MarketETFPrice).unwrap()
+    e.storage()
+        .persistent()
+        .get(&DataKey::MarketETFPrice)
+        .unwrap()
 }
 
 pub fn get_token_usdc(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::TokenUSDC).unwrap()
+    e.storage().persistent().get(&DataKey::TokenUSDC).unwrap()
 }
 
 pub fn get_token_xusg(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::TokenXUSG).unwrap()
+    e.storage().persistent().get(&DataKey::TokenXUSG).unwrap()
 }
 
 pub fn get_total_xusg(e: &Env) -> i128 {
-    e.storage().get_unchecked(&DataKey::TotalXUSG).unwrap()
+    e.storage().persistent().get(&DataKey::TotalXUSG).unwrap()
 }
 
 pub fn add_to_cash_reserves(e: &Env, amount: i128) -> i128 {
@@ -52,11 +54,14 @@ pub fn subtract_from_cash_reserves(e: &Env, amount: i128) -> i128 {
     new_cash
 }
 pub fn get_cash_reserves(e: &Env) -> i128 {
-    e.storage().get_unchecked(&DataKey::ReservesCash).unwrap()
+    e.storage()
+        .persistent()
+        .get(&DataKey::ReservesCash)
+        .unwrap()
 }
 
 pub fn get_fees(e: &Env) -> i128 {
-    e.storage().get_unchecked(&DataKey::Fees).unwrap()
+    e.storage().persistent().get(&DataKey::Fees).unwrap()
 }
 
 pub fn get_balance(e: &Env, contract: Address) -> i128 {
@@ -68,37 +73,41 @@ pub fn get_balance_usdc(e: &Env) -> i128 {
 }
 
 pub fn set_token_usdc(e: &Env, contract: Address) {
-    e.storage().set(&DataKey::TokenUSDC, &contract);
+    e.storage().persistent().set(&DataKey::TokenUSDC, &contract);
 }
 
 pub fn set_token_xusg(e: &Env, contract: Address) {
-    e.storage().set(&DataKey::TokenXUSG, &contract);
+    e.storage().persistent().set(&DataKey::TokenXUSG, &contract);
 }
 
 pub fn set_total_xusg(e: &Env, amount: i128) {
-    e.storage().set(&DataKey::TotalXUSG, &amount)
+    e.storage().persistent().set(&DataKey::TotalXUSG, &amount)
 }
 
 pub fn set_cash_reserves(e: &Env, amount: i128) {
-    e.storage().set(&DataKey::ReservesCash, &amount)
+    e.storage()
+        .persistent()
+        .set(&DataKey::ReservesCash, &amount)
 }
 
 pub fn set_etf_market_value(e: &Env, price: i128) {
-    e.storage().set(&DataKey::MarketETFPrice, &price)
+    e.storage()
+        .persistent()
+        .set(&DataKey::MarketETFPrice, &price)
 }
 
 pub fn set_fees(e: &Env, price: i128) {
-    e.storage().set(&DataKey::Fees, &price)
+    e.storage().persistent().set(&DataKey::Fees, &price)
 }
 
 pub fn set_admin(e: &Env, admin: Address) {
-    e.storage().set(&DataKey::Admin, &admin)
+    e.storage().persistent().set(&DataKey::Admin, &admin)
 }
 
 pub fn require_admin(e: &Env) {
     e.storage()
+        .persistent()
         .get::<DataKey, Address>(&DataKey::Admin)
         .unwrap()
-        .expect("Admin required")
         .require_auth();
 }

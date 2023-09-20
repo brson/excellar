@@ -3,12 +3,7 @@ use locals::Error;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 use soroban_cli::{commands, fee, rpc, utils, wasm};
-use soroban_sdk::xdr::{
-    AccountId, ContractId, CreateContractArgs, Hash, HashIdPreimage,
-    HashIdPreimageSourceAccountContractId, HostFunction, HostFunctionArgs, InvokeHostFunctionOp,
-    Memo, MuxedAccount, Operation, OperationBody, Preconditions, PublicKey, ScContractExecutable,
-    SequenceNumber, Transaction, TransactionExt, Uint256, VecM, WriteXdr,
-};
+use soroban_sdk::xdr::{AccountId, ContractId, CreateContractArgs, DiagnosticEvent, Hash, HashIdPreimage, HashIdPreimageSourceAccountContractId, HostFunction, HostFunctionArgs, InvokeHostFunctionOp, Memo, MuxedAccount, Operation, OperationBody, Preconditions, PublicKey, ScContractExecutable, SequenceNumber, Transaction, TransactionExt, TransactionResult, Uint256, VecM, WriteXdr};
 
 use upload::UploadCmd;
 
@@ -127,9 +122,17 @@ impl Cmd {
             salt,
             &key,
         )?;
-        client
+        let res = client
             .prepare_and_send_transaction(&tx, &key, &network.network_passphrase, None)
-            .await?;
+            .await;
+        match res {
+            Ok((res, diag)) => {
+                println!("result {:?}",res.result);
+            }
+            Err(e) => {
+                println!("problem {}", e)
+            }
+        }
         Ok(stellar_strkey::Contract(contract_id.0).to_string())
     }
 }
